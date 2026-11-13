@@ -28,14 +28,12 @@ services:
         fromService:
           type: web
           name: qr-lost-found-frontend
-          property: host
-          format: https://${host}
+          envVarKey: RENDER_EXTERNAL_URL
       - key: ALLOWED_ORIGINS
         fromService:
           type: web
           name: qr-lost-found-frontend
-          property: host
-          format: https://${host}
+          envVarKey: RENDER_EXTERNAL_URL
 
   # ==============================================================================
   # 2. Next.js Frontend Web Service
@@ -55,14 +53,7 @@ services:
         fromService:
           type: web
           name: qr-lost-found-backend
-          property: host
-          format: https://${host}/api/v1
-      - key: NEXT_PUBLIC_WS_URL
-        fromService:
-          type: web
-          name: qr-lost-found-backend
-          property: host
-          format: wss://${host}/api/v1/ws
+          envVarKey: RENDER_EXTERNAL_URL
 
 # ==============================================================================
 # 3. Managed PostgreSQL Database
@@ -70,6 +61,5 @@ services:
 databases:
   - name: qr-lost-found-db
     databaseName: qr_lost_found
-
     plan: free
     region: oregon
