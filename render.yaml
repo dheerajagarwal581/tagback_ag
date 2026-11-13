@@ -70,6 +70,6 @@ services:
 databases:
   - name: qr-lost-found-db
     databaseName: qr_lost_found
-    user: postgres
+
     plan: free
     region: oregon
