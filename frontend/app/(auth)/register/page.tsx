@@ -30,8 +30,16 @@ export default function RegisterPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Registration failed");
+        let errorMsg = "Registration failed";
+        try {
+          const data = await res.json();
+          errorMsg = data.detail || errorMsg;
+        } catch {
+          errorMsg = (res.status === 502 || res.status === 503)
+            ? "The backend is currently waking up on Render (free tier cold start). Please wait 15 seconds and click Register again."
+            : `Server returned HTTP ${res.status}. Please check backend logs.`;
+        }
+        throw new Error(errorMsg);
       }
 
       router.push("/dashboard/qr-code");

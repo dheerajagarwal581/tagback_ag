@@ -59,8 +59,16 @@ export default function PublicQRScanPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Failed to submit contact request.");
+        let errorMsg = "Failed to submit contact request.";
+        try {
+          const errData = await res.json();
+          errorMsg = errData.detail || errorMsg;
+        } catch {
+          errorMsg = (res.status === 502 || res.status === 503)
+            ? "Backend is spinning up on Render. Please wait 15 seconds and try again."
+            : `Server returned HTTP ${res.status}.`;
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await res.json();
