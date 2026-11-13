@@ -1,0 +1,75 @@
+services:
+  # ==============================================================================
+  # 1. FastAPI Backend Web Service
+  # ==============================================================================
+  - type: web
+    name: qr-lost-found-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: qr-lost-found-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: qr-lost-found-frontend
+          property: host
+          format: https://${host}
+      - key: ALLOWED_ORIGINS
+        fromService:
+          type: web
+          name: qr-lost-found-frontend
+          property: host
+          format: https://${host}
+
+  # ==============================================================================
+  # 2. Next.js Frontend Web Service
+  # ==============================================================================
+  - type: web
+    name: qr-lost-found-frontend
+    runtime: node
+    rootDir: frontend
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: qr-lost-found-backend
+          property: host
+          format: https://${host}/api/v1
+      - key: NEXT_PUBLIC_WS_URL
+        fromService:
+          type: web
+          name: qr-lost-found-backend
+          property: host
+          format: wss://${host}/api/v1/ws
+
+# ==============================================================================
+# 3. Managed PostgreSQL Database
+# ==============================================================================
+databases:
+  - name: qr-lost-found-db
+    databaseName: qr_lost_found
+    user: postgres
+    plan: free
+    region: oregon
