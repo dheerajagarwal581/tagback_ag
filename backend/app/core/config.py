@@ -42,8 +42,8 @@ class Settings(BaseSettings):
     SESSION_COOKIE_NAME: str = "qr_owner_session"
     GUEST_COOKIE_NAME: str = "qr_guest_session"
     SESSION_MAX_AGE_SECONDS: int = 604800  # 7 days
-    SECURE_COOKIES: bool = False
-    SAME_SITE: str = "lax"
+    SECURE_COOKIES: bool = os.environ.get("SECURE_COOKIES", "false").lower() in ("true", "1") or os.environ.get("APP_ENV") == "production" or "RENDER" in os.environ
+    SAME_SITE: str = os.environ.get("SAME_SITE", "lax")
 
     # CORS
     ALLOWED_ORIGINS: Union[str, List[str]] = [
