@@ -21,9 +21,10 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
     # Database: Auto-normalize Render's postgres:// or postgresql:// to postgresql+asyncpg://
+    # Defaults to zero-setup local SQLite file for local dev; Render overrides with PostgreSQL
     DATABASE_URL: str = os.environ.get(
         "DATABASE_URL",
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/qr_lost_found",
+        "sqlite+aiosqlite:///./qr_dev.db",
     )
 
     @field_validator("DATABASE_URL", mode="before")
