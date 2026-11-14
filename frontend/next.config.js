@@ -2,16 +2,30 @@
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
-    // In production on Render, proxy /api/v1 calls to the backend service.
-    // In local development, proxy to localhost:8000.
-    const backendUrl =
+    let target = (
       process.env.BACKEND_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
-      (process.env.NODE_ENV === "production"
-        ? "https://qr-lost-found-backend.onrender.com"
-        : "http://localhost:8000");
+      ""
+    ).trim();
 
-    const cleanBackend = backendUrl
+    if (!target) {
+      target =
+        process.env.NODE_ENV === "production"
+          ? "https://qr-lost-found-backend.onrender.com"
+          : "http://localhost:8000";
+    }
+
+    // If Render passed just the service name (e.g. "qr-lost-found-backend")
+    if (!target.includes(".") && !target.includes("localhost")) {
+      target = `https://${target}.onrender.com`;
+    }
+
+    // Next.js strictly requires destination to start with http://, https://, or /
+    if (!target.startsWith("http://") && !target.startsWith("https://")) {
+      target = `https://${target}`;
+    }
+
+    const cleanBackend = target
       .replace(/\/+$/, "")
       .replace(/\/api\/v1\/?$/, "");
 
