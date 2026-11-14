@@ -1,77 +1,54 @@
 // Centralized API and WebSocket configuration for both Local Dev and Render Production
 
-function resolveApiBaseUrl(): string {
-  let url = process.env.NEXT_PUBLIC_API_URL;
+export function getApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    // In browser: if deployed on Render or any remote domain, use same-origin relative path "/api/v1".
+    // Next.js rewrites in next.config.js will reverse-proxy this to the backend automatically!
+    // This gives ZERO CORS errors, ZERO Mixed Content blocks, and 100% reliable First-Party cookies.
+    if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      return "/api/v1";
+    }
+  }
 
-  // If unset, detect if running in browser on Render
-  if (!url) {
-    if (typeof window !== "undefined") {
-      const hostname = window.location.hostname;
-      if (hostname.includes("onrender.com")) {
-        // Automatically map frontend service to backend service
-        // e.g. qr-lost-found-frontend.onrender.com -> qr-lost-found-backend.onrender.com
-        const backendHost = hostname.replace("frontend", "backend");
-        return `https://${backendHost}/api/v1`;
+  // Local development fallback
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    let url = process.env.NEXT_PUBLIC_API_URL.trim().replace(/\/+$/, "");
+    if (!url.endsWith("/api/v1")) {
+      url = `${url}/api/v1`;
+    }
+    return url;
+  }
+
+  return "http://localhost:8000/api/v1";
+}
+
+export function getWsBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    if (process.env.NEXT_PUBLIC_WS_URL) {
+      let ws = process.env.NEXT_PUBLIC_WS_URL.trim();
+      if (!ws.startsWith("ws://") && !ws.startsWith("wss://")) {
+        ws = `wss://${ws}`;
       }
+      return ws.replace(/\/+$/, "");
     }
-    return "http://localhost:8000/api/v1";
+
+    if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      const hostname = window.location.hostname;
+      const backendHost = hostname.replace("frontend", "backend");
+      return `wss://${backendHost}/api/v1/ws`;
+    }
   }
 
-  url = url.trim();
-
-  // If Render passed just a raw service name (e.g. "qr-lost-found-backend")
-  if (!url.includes(".") && !url.includes("localhost")) {
-    url = `${url}.onrender.com`;
-  }
-
-  // Ensure scheme
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    url = `https://${url}`;
-  }
-
-  // Remove trailing slashes
-  url = url.replace(/\/+$/, "");
-
-  // Ensure path ends with /api/v1
-  if (!url.endsWith("/api/v1")) {
-    url = `${url}/api/v1`;
-  }
-
-  return url;
+  return "ws://localhost:8000/api/v1/ws";
 }
 
-function resolveWsBaseUrl(): string {
-  let wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+// Proxied string-like constants that evaluate dynamically at runtime when string-interpolated:
+export const API_BASE_URL = {
+  toString: () => getApiBaseUrl(),
+  valueOf: () => getApiBaseUrl(),
+} as unknown as string;
 
-  if (!wsUrl) {
-    const apiUrl = resolveApiBaseUrl();
-    if (apiUrl.startsWith("https://")) {
-      return apiUrl.replace("https://", "wss://").replace(/\/api\/v1$/, "/api/v1/ws");
-    }
-    return apiUrl.replace("http://", "ws://").replace(/\/api\/v1$/, "/api/v1/ws");
-  }
-
-  wsUrl = wsUrl.trim();
-
-  if (!wsUrl.includes(".") && !wsUrl.includes("localhost")) {
-    wsUrl = `${wsUrl}.onrender.com`;
-  }
-
-  if (!wsUrl.startsWith("ws://") && !wsUrl.startsWith("wss://")) {
-    wsUrl = `wss://${wsUrl}`;
-  }
-
-  wsUrl = wsUrl.replace(/\/+$/, "");
-  if (!wsUrl.endsWith("/api/v1/ws")) {
-    if (wsUrl.endsWith("/api/v1")) {
-      wsUrl = `${wsUrl}/ws`;
-    } else {
-      wsUrl = `${wsUrl}/api/v1/ws`;
-    }
-  }
-
-  return wsUrl;
-}
-
-export const API_BASE_URL = resolveApiBaseUrl();
-export const WS_BASE_URL = resolveWsBaseUrl();
+export const WS_BASE_URL = {
+  toString: () => getWsBaseUrl(),
+  valueOf: () => getWsBaseUrl(),
+} as unknown as string;
